@@ -1,4 +1,4 @@
-# SIH Project Proposal
+# Pulse
 ## AI-Driven IMU-Based Kinematic Fatigue Tracker
 
 ---

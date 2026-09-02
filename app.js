@@ -12,16 +12,37 @@ const statusText = document.getElementById('statusText');
 const fatigueAlert = document.getElementById('fatigueAlert');
 
 startBtn.addEventListener('click', () => {
+    if (!window.DeviceMotionEvent) {
+        showSetupError("Motion sensors are not available in this browser.");
+        return;
+    }
+
+    // A phone opening a Live Server LAN URL uses HTTP, which browsers can block
+    // for sensor access. Show the reason instead of failing silently.
+    if (!window.isSecureContext) {
+        showSetupError("Sensor access needs HTTPS. Deploy this prototype, then open its HTTPS link on your phone.");
+        return;
+    }
+
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission().then(permissionState => {
             if (permissionState === 'granted') {
                 startTracking();
+            } else {
+                showSetupError("Motion access was not allowed. Enable Motion & Orientation Access, then try again.");
             }
-        }).catch(console.error);
+        }).catch(() => {
+            showSetupError("Could not request motion access. Check your browser permissions and try again.");
+        });
     } else {
         startTracking();
     }
 });
+
+function showSetupError(message) {
+    statusText.innerText = message;
+    statusText.style.color = "#ff4c4c";
+}
 
 function startTracking() {
     isTracking = true;
@@ -97,11 +118,18 @@ function registerRep(concentricTime) {
 }
 
 function triggerFailure(reason) {
-    isTracking = false; 
+    isTracking = false;
     statusText.style.display = 'none';
     fatigueAlert.innerText = reason; // Display the exact reason they failed
     fatigueAlert.style.display = 'block';
-    
+
+    // Make velocity failure impossible to miss during a live set.
+    if (reason === "FATIGUE: Velocity Loss Detected") {
+        document.body.classList.remove('velocity-failure-flash');
+        void document.body.offsetWidth; // Restart the animation for every new set.
+        document.body.classList.add('velocity-failure-flash');
+    }
+
     // Aggressive haptic vibration
     if (navigator.vibrate) {
         navigator.vibrate([500, 200, 500, 200, 1000]); 
