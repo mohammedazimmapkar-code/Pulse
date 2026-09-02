@@ -35,7 +35,7 @@ function startTracking() {
 
         // STRICT THRESHOLDS: Forces full range of motion
         let bottomThreshold = 7.5; 
-        let topThreshold = 1.5;    
+        let topThreshold = 3;    
 
         if (currentState === "BOTTOM" && accY < bottomThreshold) {
             // LIFTER STARTED PULLING
@@ -64,7 +64,7 @@ function startTracking() {
             let attemptTime = Date.now() - timeStartedLifting;
             
             // Wait 500ms to ensure it wasn't just a micro-wobble at the bottom
-            if (attemptTime > 500) {
+            if (attemptTime > 800) {
                 triggerFailure("FAILED REP: Incomplete Range of Motion");
             } else {
                 currentState = "BOTTOM"; // Silent reset for tiny jitters
