@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinematic Fatigue Tracker</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 { color: #4CAF50; }
+        .data-card {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .data-value { font-size: 2.5rem; font-weight: bold; margin: 10px 0; }
+        .alert { color: #ff4c4c; font-weight: bold; display: none; }
+        button {
+            background-color: #4CAF50; color: white;
+            border: none; border-radius: 50px;
+            padding: 15px 40px; font-size: 1.2rem; font-weight: bold;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Session Summary</h1>
+    
+    <div class="data-card">
+        <div>Exercise</div>
+        <div class="data-value">Bicep Curl</div>
+    </div>
+
+    <div class="data-card">
+        <div>Rep Count</div>
+        <div class="data-value" id="repCount">0</div>
+    </div>
+
+    <div class="data-card" id="statusCard">
+        <div>Status</div>
+        <div class="data-value" id="statusText" style="color: #4CAF50;">Good Effort</div>
+        <div class="data-value alert" id="fatigueAlert">FATIGUE DETECTED: STOP!</div>
+    </div>
+
+    <button id="startBtn">Start Tracking</button>
+
+    <script src="app.js"></script>
+</body>
+</html>
