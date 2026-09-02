@@ -36,7 +36,7 @@ function startTracking() {
 
         // Threshold logic: 9.8 is resting gravity. A fast upward curl spikes this number.
         // You may need to tweak '13' and '10' based on how hard you lift the phone.
-        if (accY > 13) { 
+        if (accY > 15) { 
             if (!isLifting) {
                 isLifting = true;
                 processRep();
