@@ -1,8 +1,8 @@
 let isTracking = false;
 let repCount = 0;
-let isLifting = false;
-let lastRepTime = 0;
-let firstRepDuration = 0;
+let currentState = "BOTTOM"; 
+let timeStartedLifting = 0;
+let firstRepConcentricTime = 0;
 
 // UI Elements
 const startBtn = document.getElementById('startBtn');
@@ -11,7 +11,6 @@ const statusText = document.getElementById('statusText');
 const fatigueAlert = document.getElementById('fatigueAlert');
 
 startBtn.addEventListener('click', () => {
-    // Request permission for iOS devices (Android usually allows it directly)
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission().then(permissionState => {
             if (permissionState === 'granted') {
@@ -26,58 +25,66 @@ startBtn.addEventListener('click', () => {
 function startTracking() {
     isTracking = true;
     startBtn.style.display = 'none';
+    statusText.innerText = "Arm down to begin...";
     
-    // Listen to the phone's accelerometer
     window.addEventListener('devicemotion', (event) => {
         if (!isTracking) return;
 
-        // Y-axis acceleration (includes gravity)
+        // Use absolute Y gravity to handle right-side up or upside-down phone
         let accY = Math.abs(event.accelerationIncludingGravity.y);
 
-        // Threshold logic: 9.8 is resting gravity. A fast upward curl spikes this number.
-        // You may need to tweak '13' and '10' based on how hard you lift the phone.
-        if (accY > 15) { 
-            if (!isLifting) {
-                isLifting = true;
-                processRep();
-            }
-        } else if (accY < 11) {
-            isLifting = false; // Reset when arm goes back down
+        // THRESHOLDS FOR BICEP CURL
+        // Arm straight down = Y is near 9.8
+        // Arm curled horizontal = Y is near 0
+        let bottomThreshold = 7.5; 
+        let topThreshold = 3.5;    
+
+        if (currentState === "BOTTOM" && accY < bottomThreshold) {
+            // User just started curling the weight UP
+            currentState = "LIFTING";
+            timeStartedLifting = Date.now();
+            statusText.innerText = "Lifting...";
+            statusText.style.color = "#FFEB3B"; // Yellow
+        } 
+        else if (currentState === "LIFTING" && accY < topThreshold) {
+            // User successfully reached the TOP of the curl
+            currentState = "TOP";
+            let concentricTime = Date.now() - timeStartedLifting;
+            registerRep(concentricTime);
+            statusText.innerText = "Lower the weight";
+            statusText.style.color = "#2196F3"; // Blue
+        }
+        else if (currentState === "TOP" && accY > bottomThreshold) {
+            // User lowered the weight fully back DOWN
+            currentState = "BOTTOM";
+            statusText.innerText = "Ready for next rep";
+            statusText.style.color = "#4CAF50"; // Green
         }
     });
 }
 
-function processRep() {
-    let currentTime = Date.now();
+function registerRep(concentricTime) {
     repCount++;
     repCountDisplay.innerText = repCount;
 
+    // Save the baseline speed of the very first rep
     if (repCount === 1) {
-        lastRepTime = currentTime;
+        firstRepConcentricTime = concentricTime;
     } else {
-        let currentRepDuration = currentTime - lastRepTime;
-        
-        // Save the baseline speed of the very first complete rep
-        if (repCount === 2) {
-            firstRepDuration = currentRepDuration;
-        }
-
-        // FATIGUE CHECK: If this rep took 40% longer than your first rep
-        if (repCount > 2 && currentRepDuration > (firstRepDuration * 1.4)) {
+        // FATIGUE CHECK: If this upward pull took 40% longer than your first rep
+        if (concentricTime > (firstRepConcentricTime * 1.4)) {
             triggerFailure();
         }
-        
-        lastRepTime = currentTime;
     }
 }
 
 function triggerFailure() {
-    isTracking = false; // Stop tracking
+    isTracking = false; 
     statusText.style.display = 'none';
     fatigueAlert.style.display = 'block';
     
-    // Vibrate the phone (Long, Short, Long pattern)
+    // Vibrate the phone aggressively
     if (navigator.vibrate) {
-        navigator.vibrate([500, 200, 500]); 
+        navigator.vibrate([500, 200, 500, 200, 1000]); 
     }
 }
