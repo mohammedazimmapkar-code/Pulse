@@ -5,68 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kinematic Fatigue Tracker</title>
     <style>
+        * { box-sizing: border-box; }
         body {
-            background-color: #121212;
-            color: #ffffff;
+            margin: 0;
+            min-height: 100vh;
+            background: #101216;
+            color: #f7f9fc;
             font-family: Arial, sans-serif;
             text-align: center;
-            padding: 20px;
-            min-height: 100vh;
-            box-sizing: border-box;
+            padding: 24px 18px;
         }
-        body.velocity-failure-flash::after {
-            content: "";
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            pointer-events: none;
+        body.velocity-failure-flash {
             animation: velocityFailureFlash 0.35s steps(1, end) 6;
+        }
+        body.incomplete-rep-flash {
+            animation: incompleteRepFlash 0.35s steps(1, end) 6;
         }
         @keyframes velocityFailureFlash {
             0%, 49% { background-color: #f44336; }
             50%, 99% { background-color: #ffffff; }
-            100% { background-color: transparent; }
+            100% { background-color: #101216; }
         }
-        h1 { color: #4CAF50; }
+        @keyframes incompleteRepFlash {
+            0%, 49% { background-color: #fbc02d; }
+            50%, 99% { background-color: #ffffff; }
+            100% { background-color: #101216; }
+        }
+        .app-shell { width: min(100%, 520px); margin: 0 auto; }
+        .eyebrow {
+            color: #79e59a;
+            font-size: 0.72rem;
+            font-weight: bold;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+        h1 { margin: 8px 0; font-size: clamp(2rem, 9vw, 3rem); }
+        .subtitle { margin: 0 0 28px; color: #9ea8b8; font-size: 0.95rem; }
+        .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .data-card {
-            background: #1e1e1e;
-            border-radius: 12px;
+            background: linear-gradient(145deg, #20252d, #181b21);
+            border: 1px solid #303743;
+            border-radius: 18px;
             padding: 20px;
-            margin: 20px 0;
+            margin: 14px 0;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
         }
-        .data-value { font-size: 2.5rem; font-weight: bold; margin: 10px 0; }
-        .alert { color: #ff4c4c; font-weight: bold; display: none; }
+        .metric-card { margin: 0; padding: 18px 12px; }
+        .card-label { color: #9ea8b8; font-size: 0.78rem; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; }
+        .data-value { font-size: 2.5rem; font-weight: bold; margin: 10px 0 0; }
+        .metric-card .data-value { font-size: clamp(1.8rem, 8vw, 2.5rem); }
+        #repCard.rep-success {
+            animation: repSuccessPulse 0.28s ease-in-out 2;
+        }
+        @keyframes repSuccessPulse {
+            0%, 100% { background: linear-gradient(145deg, #20252d, #181b21); transform: scale(1); }
+            50% { background: #1f7a3b; border-color: #62e58b; transform: scale(1.02); }
+        }
+        #statusCard { padding: 24px 16px; }
+        #statusText { font-size: 1.5rem; }
+        .alert { color: #ff6b6b; font-weight: bold; display: none; }
         button {
-            background-color: #4CAF50; color: white;
-            border: none; border-radius: 50px;
-            padding: 15px 40px; font-size: 1.2rem; font-weight: bold;
-            margin-top: 30px;
+            width: 100%;
+            background: #50c878;
+            color: #0c1910;
+            border: none;
+            border-radius: 14px;
+            padding: 17px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 10px;
+            box-shadow: 0 8px 20px rgba(80, 200, 120, 0.2);
+        }
+        .hint { color: #7d8797; font-size: 0.82rem; margin: 14px 8px 0; }
+        @media (max-width: 360px) {
+            body { padding: 18px 12px; }
+            .data-card { padding: 16px 10px; }
         }
     </style>
 </head>
 <body>
-    <h1>Session Summary</h1>
-    
-    <div class="data-card">
-        <div>Exercise</div>
-        <div class="data-value">Bicep Curl</div>
-    </div>
+    <main class="app-shell">
+        <div class="eyebrow">IMU Fatigue Tracker</div>
+        <h1>Hammer Curls</h1>
+        <p class="subtitle">Live velocity and fatigue tracking</p>
 
-    <div class="data-card">
-        <div>Rep Count</div>
-        <div class="data-value" id="repCount">0</div>
-    </div>
-    <div class="data-card">
-        <div>Concentric Time (Velocity)</div>
-        <div class="data-value" id="repTimeDisplay">0.00s</div>
-    </div>
-    <div class="data-card" id="statusCard">
-        <div>Status</div>
-        <div class="data-value" id="statusText" style="color: #4CAF50;">Good Effort</div>
-        <div class="data-value alert" id="fatigueAlert">FATIGUE DETECTED: STOP!</div>
-    </div>
+        <section class="metric-grid" aria-label="Workout metrics">
+            <div class="data-card metric-card" id="repCard">
+                <div class="card-label">Rep count</div>
+                <div class="data-value" id="repCount">0</div>
+            </div>
+            <div class="data-card metric-card">
+                <div class="card-label">Concentric time</div>
+                <div class="data-value" id="repTimeDisplay">0.00s</div>
+            </div>
+        </section>
 
-    <button id="startBtn">Start Tracking</button>
+        <div class="data-card" id="statusCard">
+            <div class="card-label">Session status</div>
+            <div class="data-value" id="statusText" style="color: #4CAF50;">Ready when you are</div>
+            <div class="data-value alert" id="fatigueAlert">FATIGUE DETECTED: STOP!</div>
+        </div>
+
+        <button id="startBtn">Start Tracking</button>
+        <p class="hint">Keep your arm down and still briefly to calibrate.</p>
+    </main>
 
     <script src="app.js"></script>
 </body>
